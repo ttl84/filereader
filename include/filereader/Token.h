@@ -4,7 +4,7 @@
 #include <string>
 #include <ostream>
 struct Token final{
-	enum class Type : unsigned{
+	enum class Type : uint8_t{
 		INTEGER, REAL, BOOLEAN, IDENTIFIER, STRING,
 		BEGIN_LIST, END_LIST,
 		ASSIGNMENT,

@@ -5,7 +5,7 @@ struct Char{
 	bool end;
 	unsigned row;
 	unsigned col;
-	operator char(void) const
+	operator char() const
 	{
 		return c;
 	}

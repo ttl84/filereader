@@ -1,5 +1,5 @@
 filereader library
-Reads a file, and interpret its contents.
+Interpret a file and make its contents accessible in a program
 
 Grammar:
 S -> Statement*
@@ -14,11 +14,8 @@ Expression -> Identifier |
 		Boolean |
 		List
 
-Identifier -> start with underscore or letter,
-	then followed by zero or more underscore or letter or digit
+Identifier -> letter_ (letter_ | digit)*
 String -> zero or more characters in between two "
-Integer -> one or more digit
-Real -> decimal real number,, optionally in scientific notation
 Boolean -> 'true' | 'false'
-List -> '[' (Expression ',')* Expression ']'
+List -> [ list of comma separated expressions ]
 

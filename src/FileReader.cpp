@@ -2,25 +2,12 @@
 #include <iostream>
 #include <memory>
 #include "TokenStream.h"
-#define SDT
-#ifdef SDT
-	#include "Parser.h"
-#else
-	#include "SyntaxAnalyzer.h"
-	#include "SemanticAnalyzer.h"
-	#include "Evaluator.h"
-#endif
+#include "Parser.h"
 FileReader::FileReader(std::istream & is)
 {
 	CharStream cs(is);
 	TokenStream ts(cs);
-#ifdef SDT
 	parse(ts, data, pool);
-#else
-	std::unique_ptr<AST> tree(parse(ts));
-	SemanticAnalyzer().visit(tree);
-	Evaluator(data, pool).visit(tree);
-#endif
 
 }
 Object * FileReader::get(std::string key)

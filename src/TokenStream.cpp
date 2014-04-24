@@ -7,6 +7,10 @@ bool isEnd(Char const & ch)
 {
 	return ch.end;
 }
+bool isChar(Char const & ch, char c)
+{
+	return (not isEnd(ch)) and ch == c;
+}
 bool isLowerCase(Char const & ch)
 {
 	return (not isEnd(ch)) and 
@@ -62,162 +66,113 @@ bool inString(Char const & ch)
 {
 	return not (isEnd(ch) or beginsString(ch));
 }
+template<class T>
+bool stringTo(std::string const & lexeme, T & output)
+{
+	T tmp;
+	if(std::istringstream(lexeme) >> tmp)
+	{
+		output = tmp;
+		return true;
+	}
+	else
+		return false;
+}
 bool toLong(std::string const & lexeme, long & output)
 {
-	return std::istringstream(lexeme) >> output;
+	return stringTo(lexeme, output);
 	
 }
 bool toReal(std::string const & lexeme, double & output)
 {
-	return std::istringstream(lexeme) >> output;
+	return stringTo(lexeme, output);
 }
-Token readNumber(CharStream & cs)
-{
+
+class NumMatcher{
+private:
+	CharStream & cs;
+public:
 	std::string lexeme;
-	Char first = cs.peek();
-	Char ch = first;
-	Token token(first);
-	for(unsigned state = 0, running = 1; running; )
+	bool err;
+	NumMatcher(CharStream & stream):cs(stream), err(false)
 	{
-		switch(state){
-		case 0: //negation sign
-			if(ch.c == '-')
-			{
-				lexeme += ch.c;
-				cs.get();
-				ch = cs.peek();
-			}
-			state = 1;
-			break;
-		case 1: // first integer
-			if(isDigit(ch))
-			{
-				lexeme += ch.c;
-				cs.get();
-				ch = cs.peek();
-				state = 2;
-			}
-			else
-				state = -1;
-			break;
-		case 2: //trailing integer
-			if(isDigit(ch))
-			{
-				lexeme += ch.c;
-				cs.get();
-				ch = cs.peek();
-			}
-			else if(ch.c == '.')
-			{
-				lexeme += ch.c;
-				cs.get();
-				ch = cs.peek();
-				state = 3;
-			}
-			else if(ch.c == 'e')
-			{
-				lexeme += ch.c;
-				cs.get();
-				ch = cs.peek();
-				state = 5;
-			}
-			else
-			{
-				token.type = Token::Type::INTEGER;
-				running = 0;
-			}
-			break;
-		case 3: //first integer after decimal point
-			if(isDigit(ch))
-			{
-				lexeme += ch.c;
-				cs.get();
-				ch = cs.peek();
-				state = 4;
-			}
-			else
-				state = -1;
-			break;
-		case 4: //trailing decimal or exponent
-			if(isDigit(ch))
-			{
-				lexeme += ch.c;
-				cs.get();
-				ch = cs.peek();
-			}
-			else if(ch.c == 'e' or ch.c == 'E')
-			{
-				lexeme += ch.c;
-				cs.get();
-				ch = cs.peek();
-				state = 5;
-			}
-			else
-			{
-				token.type = Token::Type::REAL;
-				running = 0;
-			}
-			break;
-		case 5: // after exponent, maybe sign
-			if(ch.c == '-' or ch.c == '+')
-			{
-				lexeme += ch.c;
-				cs.get();
-				ch = cs.peek();
-			}
-			state = 6;
-			break;
-		case 6: // first integer of exponent
-			if(isDigit(ch))
-			{
-				lexeme += ch.c;
-				cs.get();
-				ch = cs.peek();
-				state = 7;
-			}
-			else
-				state = -1;
-			break;
-		case 7: // trailing exponent
-			if(isDigit(ch))
-			{
-				lexeme += ch.c;
-				cs.get();
-				ch = cs.peek();
-			}
-			else
-			{
-				token.type = Token::Type::REAL;
-				running = 0;
-			}
-			break;
-		default: //error
-			if(not (isEnd(ch) or isWhitespace(ch)))
-			{
-				lexeme += ch;
-				cs.get();
-				ch = cs.peek();
-			}
-			else
-			{
-				token.type = Token::Type::ERROR;
-				running = 0;
-			}
+		number();
+	}
+private:
+	//number -> sign integer fraction exponent
+	void number()
+	{
+		sign();
+		integer();
+		fraction();
+		exponent();
+	}
+	//integer -> digit digit*
+	void integer()
+	{
+		do digit(); while(not err and isDigit(cs.peek()));
+	}
+	//fraction -> epsilon | . integer
+	void fraction()
+	{
+		if(err)
+			return;
+		Char ch = cs.peek();
+		if(isChar(ch, '.'))
+		{
+			lexeme += cs.get();
+			integer();
 		}
 	}
-	if(token.type == Token::Type::INTEGER)
+	//exponent -> epsilon | e (+ | - | epsilon) integer
+	void exponent()
 	{
-		if(not toLong(lexeme, token.datum.integer))
-			token.type = Token::Type::ERROR;
+		if(err)
+			return;
+		Char ch = cs.peek();
+		if(isChar(ch, 'e') or isChar(ch, 'E'))
+		{
+			lexeme += cs.get();
+			sign();
+			integer();
+		}
 	}
-	else if(token.type == Token::Type::REAL)
+	//terminals
+	//sign -> (- | epsilon)
+	void sign()
 	{
-		if(not toReal(lexeme, token.datum.real))
-			token.type = Token::Type::ERROR;
+		if(err)
+			return;
+		Char ch = cs.peek();
+		if(isChar(ch, '-'))
+			lexeme += cs.get();
 	}
-	else
-		token.type = Token::Type::ERROR;
-	token.lexeme = lexeme;
+	void digit()
+	{
+		if(err)
+			return;
+		auto ch = cs.get();
+		if(isDigit(ch))
+			lexeme += ch;
+		else
+			err = true;
+	}
+};
+Token readNumber(CharStream & cs)
+{
+	Char first = cs.peek();
+	Token token(first);
+	
+	NumMatcher matcher(cs);
+	token.lexeme = matcher.lexeme;
+	token.type = Token::Type::ERROR;
+	if(not matcher.err)
+	{
+		if(toReal(token.lexeme, token.datum.real))
+			token.type = Token::Type::REAL;
+		if(toLong(token.lexeme, token.datum.integer))
+			token.type = Token::Type::INTEGER;
+	}
 	return token;
 }
 Token readIdentifier(CharStream & cs)

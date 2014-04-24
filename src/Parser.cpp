@@ -1,13 +1,12 @@
 #include "Parser.h"
-
 #include "Object.h"
 #include "TokenStream.h"
+#include <algorithm>
 #include <string>
 #include <map>
 #include <vector>
 #include <memory>
 #include <stack>
-#include <forward_list>
 #include <cassert>
 #include <iostream>
 namespace NonTerminal{
@@ -28,12 +27,13 @@ class Parser{
 	ObjectTable & data;
 	ObjectPool & pool;
 
-	// non terminal
+	// top -> statement*
 	void top()
 	{
 		while(not accept(Token::Type::END))
 			statement();
 	}
+	// statement -> assignment*
 	void statement()
 	{
 		assignment();
@@ -63,7 +63,7 @@ class Parser{
 			boolean();
 		else
 		{
-			push(StackItem{StackItem::Type::ERROR, nullptr});
+			push({StackItem::Type::ERROR, nullptr});
 			error("any expressions");
 			panic(NonTerminal::EXPR);
 		}
@@ -72,7 +72,7 @@ class Parser{
 	void list()
 	{
 		match(Token::Type::BEGIN_LIST);
-		push(StackItem{StackItem::Type::START_LIST, nullptr});
+		push({StackItem::Type::START_LIST, nullptr});
 		commaList();
 		match(Token::Type::END_LIST);
 		MakeList();
@@ -130,37 +130,38 @@ class Parser{
 		obj->datum = ts.get().datum.boolean;
 		push({StackItem::Type::OBJECT, obj});
 	}
+	// actions
 	void Assign(Token & tok)
 	{
 		auto expr = pop();
-		if(expr.type != StackItem::Type::OBJECT)
-		{
-			
-		}
-		else
+		if(expr.type == StackItem::Type::OBJECT)
 			data[tok.lexeme] = expr.obj;
 	}
 	void MakeList()
 	{
-		std::forward_list<Object*> l;
+		std::vector<Object*> v;
 		bool err = false;
 		while(true)
 		{
 			auto expr = pop();
 			if(expr.type == StackItem::Type::START_LIST)
 				break;
-			else
-				l.push_front(expr.obj);
-			if(expr.type == StackItem::Type::ERROR)
+			else if(expr.type == StackItem::Type::OBJECT)
+				v.push_back(expr.obj);
+			else if(expr.type == StackItem::Type::ERROR)
 				err = true;
 		}
 		if(err)
+		{
 			push({StackItem::Type::ERROR, nullptr});
+			stack_error();
+		}
 		else
 		{
+			std::reverse(v.begin(), v.end());
 			auto obj = new ListObject();
 			pool.emplace_back(obj);
-			obj->datum = std::vector<Object*>(l.begin(), l.end());
+			obj->datum = v;
 			push({StackItem::Type::OBJECT, obj});
 		}
 	}
@@ -215,6 +216,10 @@ class Parser{
 	{
 		auto & tok = ts.peek();
 		std::cerr << __func__ << "(" << tok.row << ", " << tok.col << "): " << "expecting " << thing << ", got " << tok << std::endl;
+	}
+	void stack_error()
+	{
+		std::cerr << __func__<< "encountered error in stack. continuing" << std::endl;
 	}
 public:
 	Parser(TokenStream & stream, ObjectTable & objectTable, ObjectPool & objectPool)
