@@ -1,5 +1,5 @@
 filereader library
-Interpret a file and make its contents accessible in a program
+Interface with a file written in a special format.
 
 Grammar:
 S -> Statement*
@@ -19,3 +19,12 @@ String -> zero or more characters in between two "
 Boolean -> 'true' | 'false'
 List -> [ list of comma separated expressions ]
 
+Example:
+
+; this is a comment
+;another comment
+a := "hello"
+b := 3.14
+c := 42
+d := true
+e := [a, b, c, d, e, "f", [1.2, 3.4]]
