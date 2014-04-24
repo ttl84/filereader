@@ -11,11 +11,10 @@ public:
 	TokenStream(CharStream & charStream);
 	
 	Token get(void);
-	Token peek(void) const;
+	Token const & peek(void) const;
 
 	bool bad(void) const;
 	bool eof(void) const;
-	TokenStream & operator >>(Token & token);
 	operator bool(void) const;
 };
 #endif

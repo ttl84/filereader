@@ -6,9 +6,9 @@
 struct Token final{
 	enum class Type : unsigned{
 		INTEGER, REAL, BOOLEAN, IDENTIFIER, STRING,
-		OPEN_SQUARE_BRACKET, CLOSE_SQUARE_BRACKET,
+		BEGIN_LIST, END_LIST,
 		ASSIGNMENT,
-		COMMA,
+		CONTINUE_LIST,
 		ERROR, COMMENT, END
 	} type;
 	union{

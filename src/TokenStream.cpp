@@ -248,10 +248,10 @@ Token readOperator(CharStream & cs)
 	Token tok(first);
 	
 	if(first == '[')
-		tok.type = Token::Type::OPEN_SQUARE_BRACKET;
+		tok.type = Token::Type::BEGIN_LIST;
 	
 	else if(first == ']')
-		tok.type = Token::Type::CLOSE_SQUARE_BRACKET;
+		tok.type = Token::Type::END_LIST;
 	
 	else if(first == ':' and cs.peek() == '=')
 	{
@@ -260,7 +260,7 @@ Token readOperator(CharStream & cs)
 	}
 	
 	else if(first == ',')
-		tok.type = Token::Type::COMMA;
+		tok.type = Token::Type::CONTINUE_LIST;
 	
 	else
 		tok.type = Token::Type::ERROR;
@@ -344,7 +344,7 @@ Token TokenStream::get(void)
 	eofFlag = (token.type == Token::Type::END);
 	return token;
 }
-Token TokenStream::peek(void) const
+Token const & TokenStream::peek(void) const
 {
 	return nextToken;
 }
@@ -360,11 +360,6 @@ TokenStream::TokenStream(CharStream & charStream)
 :cs(charStream), eofFlag(false)
 {
 	get();
-}
-TokenStream & TokenStream::operator >>(Token & token)
-{
-	token = get();
-	return *this;
 }
 
 TokenStream::operator bool(void) const

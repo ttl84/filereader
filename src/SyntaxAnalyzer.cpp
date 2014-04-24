@@ -58,7 +58,7 @@ bool beginsLiteral(TokenStream & ts)
 }
 bool beginsList(TokenStream & ts)
 {
-	return ts.peek().type == Token::Type::OPEN_SQUARE_BRACKET;
+	return ts.peek().type == Token::Type::BEGIN_LIST;
 }
 bool beginsExpression(TokenStream & ts)
 {
@@ -139,14 +139,14 @@ AST * parseList(TokenStream & ts)
 		return parseError("list", ts);
 	
 	AST * tree = new AST(AST::Type::LIST, ts.peek());
-	expect(Token::Type::OPEN_SQUARE_BRACKET, ts);
+	expect(Token::Type::BEGIN_LIST, ts);
 	while(beginsExpression(ts))
 	{
 		tree->append(parseExpression(ts));
-		if(ts.peek().type == Token::Type::COMMA)
+		if(ts.peek().type == Token::Type::CONTINUE_LIST)
 			ts.get();
 	}
-	expect(Token::Type::CLOSE_SQUARE_BRACKET, ts);
+	expect(Token::Type::END_LIST, ts);
 	return tree;
 }
 
